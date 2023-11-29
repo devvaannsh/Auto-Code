@@ -1,3 +1,4 @@
+import { start } from 'repl';
 import * as vscode from 'vscode';
 
 // This method is called when the extension is activated
@@ -14,7 +15,6 @@ export function activate(context: vscode.ExtensionContext) {
 			const text : string = editor.document.getText(selection);
 				
 			if (text){  // make sure some text is selected
-				console.log(text);
 				// transformCode is the function which applies the logic and converts the code
 				const transformedCode : string = transformCode(text);
 
@@ -29,38 +29,67 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(disposable);
 }
 
-function transformCode(user_code : string){
-	// the main logic will appear here
 
-    // Logic -> `The algorithm processes a given text, taking the selected text as a parameter. Initially, it identifies the first numeric value within the text, designating it as the starting number. The counter variable is then initialized with the starting number. Subsequently, all numeric occurrences within the same line are substituted with this number. Upon encountering a newline character ('\n'), the counter is incremented by 1. This incremented counter value is employed as the replacement for all numeric instances in the next line, and while traversing we set the value of the curr_character we are traversing and add it to the modified string`
+// Function to transform code by replacing line numbers with incremented values
+function transformCode(userCode: string) {
+    let modifiedCode: string = ``;  // The modified string
+    let startingNumber: string = '';   // This will hold the number from where the count starts
+    let counter: number = -1;   // This will hold the current number that will replace the old number, it will get incremented by 1 for every next line
+    let indx: number = 0;   // Index variable for iterating through the input code string
+    let tempIndx: number = 0;  // An index variable for temporary checks
+    let currCharacter: string = '';  // This variable will hold the current character that is to be appended to the new string
 
-    let modified_text: string = ``;     
-    let starting_number = null;
-    let counter: number = -1;
-    let indx: number = 0;
-    let curr_character: string = ''
-    for (indx = 0; indx < user_code.length; indx++){
-        if (user_code[indx] == '\n' && counter != -1){
-            counter += 1;
-            curr_character = '\n';
-        }
-        else if (user_code[indx] >= '0' && user_code[indx] <= '9'){
-            if (starting_number == null){
-                starting_number = user_code[indx];
-                counter = Number(starting_number);
-                curr_character = starting_number;
+    // Loop through each character in the input code string
+    for (indx = 0; indx < userCode.length; indx++) {
+
+        // Encountering a \n (newline) character in the string
+        if (userCode[indx] == '\n') {
+            // Check if a counter has been initialized and the previous character is not a newline
+            if (counter != -1 && userCode[indx - 1] != '\n') {
+                counter += 1;  // Increment the counter
             }
-            else {
-                curr_character = String(counter);
-            }
+            currCharacter = '\n';  // Set the current character to newline
         }
+
+        // When the character is not a number 
+        else if (!"0123456789".includes(userCode[indx])) {
+            currCharacter = userCode[indx];  // Set the current character to the non-number character
+        }
+
+        // When the character is a number
         else {
-            curr_character = user_code[indx];
+            // If the starting number is still unknown, i.e., when startingNumber is an empty string
+            if (!startingNumber) {
+                tempIndx = indx; // Save the current index for reference
+
+                // Extract the starting number and update the counter
+                while ("0123456789".includes(userCode[tempIndx])) {
+                    startingNumber += userCode[tempIndx]; // Build the starting number character by character
+                    currCharacter += userCode[tempIndx]; // Include the digit in the current character
+                    tempIndx += 1; // Move to the next character
+                }
+
+                counter = Number(startingNumber); // Convert the extracted starting number to a numeric value
+                indx = tempIndx - 1;  // Update the index to the last digit of the starting number for the main loop to continue correctly
+            }
+            else {    // when starting number is known
+                tempIndx = indx;
+                // Skip the consecutive digits of the existing number
+                while ("0123456789".includes(userCode[tempIndx])) {
+                    tempIndx += 1;
+                }
+                indx = tempIndx - 1;  // Update the index to the last digit of the existing number
+                currCharacter = String(counter);  // Set the current character to the counter value
+            }
         }
-        modified_text += curr_character;
+
+        modifiedCode += currCharacter;  // Append the current character to the modified code string
+        currCharacter = '';  // Reset the current character for the next iteration
     }
-	return modified_text;
+
+    return modifiedCode;  // Return the transformed code
 }
+
 
 // This method is called when the extension is deactivated
 export function deactivate() {}
