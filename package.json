@@ -14,8 +14,8 @@
   "contributes": {
     "commands": [
       {
-        "command": "auto-code.helloWorld",
-        "title": "Hello World"
+        "command": "auto-code",
+        "title": "Auto Code"
       }
     ]
   },
